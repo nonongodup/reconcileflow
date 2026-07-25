@@ -1,159 +1,330 @@
 # ReconcileFlow
 
-Standalone source for the ReconcileFlow limited pilot. It preserves the current React interface and deterministic CSV/XLSX reconciliation behavior while replacing ChatGPT Sites/Cloudflare runtime bindings with portable Node.js implementations.
+ReconcileFlow is a file reconciliation application for comparing CSV and Excel files.
 
-> Pilot scope: use synthetic or explicitly approved non-sensitive data only. This project is not certified for payroll, medical, banking, or other regulated production data.
+It helps users find:
 
-## Architecture
+* Missing records
+* Extra records
+* Duplicate keys
+* Field-level differences
+* Formatting issues
+* Data transformation errors
 
-- **Web application:** Next.js 16 App Router, React 19, TypeScript, CSS, Lucide icons
-- **Authentication:** Clerk hosted account flows and server-validated session tokens
-- **Database:** Neon-compatible PostgreSQL via `@neondatabase/serverless`; append-only SQL migrations
-- **Reconciliation:** deterministic indexed TypeScript engine; CSV/XLSX parsing with SheetJS
-- **Object storage:** local private filesystem for development, or S3-compatible private object storage for deployments
-- **API:** Next.js route handlers for reconciliation, templates, history, details, downloads, cleanup, migration, health, and security status
+The current version is intended for pilot testing with synthetic or approved non-sensitive data only.
 
-PostgreSQL stores users, owner-scoped templates and run metadata, summaries, audit events, rate limits, cleanup state, and object metadata. Complete uploaded datasets are not stored in PostgreSQL. Source uploads are removed after processing; details and reports are temporary objects.
+Do not use it with payroll, medical, banking, or other regulated production data.
+
+## Technology
+
+ReconcileFlow uses:
+
+* Next.js
+* React
+* TypeScript
+* Clerk authentication
+* PostgreSQL with Neon
+* SheetJS for CSV and Excel parsing
+* Local or S3-compatible private file storage
+
+The reconciliation engine is deterministic. It compares records using configured keys, column mappings, and comparison rules.
 
 ## Requirements
 
-- Node.js **22.13 or newer**
-- npm 10+
-- PostgreSQL (Neon is recommended)
-- Clerk application
-- For hosted deployments, a private S3-compatible bucket (AWS S3, Cloudflare R2 through its S3 API, or another compatible provider)
+Before running the project, install:
 
-## Local installation
+* Node.js 22.13 or newer
+* npm 10 or newer
+* PostgreSQL or a Neon database
+* A Clerk application
+
+For hosted deployments, you also need a private S3-compatible storage bucket.
+
+## Run locally
+
+Clone the repository:
 
 ```bash
 git clone <your-private-repository-url>
 cd reconcileflow
+```
+
+Install dependencies:
+
+```bash
 npm ci
+```
+
+Create your local environment file:
+
+```bash
 cp .env.example .env.local
 ```
 
-Populate `.env.local`, create the database schema, and start development:
+Add the required environment variables to `.env.local`.
+
+Run the database migrations:
 
 ```bash
 npm run db:migrate
+```
+
+Start the application:
+
+```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`. Local object files default to `.data/objects` and are gitignored.
+Open:
 
-## Commands
+```text
+http://localhost:3000
+```
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Local Next.js development server |
-| `npm run typecheck` | TypeScript compiler check |
-| `npm run lint` | ESLint |
-| `npm test` | Automated engine, parser, persistence, migration, and security tests |
-| `npm run build` | Production build |
-| `npm start` | Start the production build |
-| `npm run db:migrate` | Apply non-destructive append-only migrations with a database lock |
-| `npm run db:generate` | Generate Drizzle migration metadata when schema definitions change |
+Local uploaded files are stored in:
+
+```text
+.data/objects
+```
+
+This folder is excluded from Git.
+
+## Available commands
+
+| Command               | Purpose                            |
+| --------------------- | ---------------------------------- |
+| `npm run dev`         | Start the local development server |
+| `npm run typecheck`   | Run TypeScript checks              |
+| `npm run lint`        | Run ESLint                         |
+| `npm test`            | Run automated tests                |
+| `npm run build`       | Create a production build          |
+| `npm start`           | Start the production build         |
+| `npm run db:migrate`  | Apply database migrations          |
+| `npm run db:generate` | Generate migration metadata        |
 
 ## Environment variables
 
-Copy `.env.example`; never commit real values.
+Copy `.env.example` and add your own values.
+
+Never commit real secrets to GitHub.
 
 ### Required
 
-- `DATABASE_URL` — Neon/PostgreSQL connection string
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — Clerk public browser key
-- `CLERK_SECRET_KEY` — Clerk server secret
-- `APP_URL` — exact public origin, e.g. `http://localhost:3000` or the production HTTPS URL
-- `MIGRATION_TOKEN` — bearer token protecting the administrative migration endpoint
-- `CLEANUP_TOKEN` — bearer token protecting the cleanup endpoint
+```text
+DATABASE_URL
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+APP_URL
+MIGRATION_TOKEN
+CLEANUP_TOKEN
+```
 
-### Storage
+### File storage
 
-- `STORAGE_DRIVER` — `local` for development or `s3` for hosted deployments
-- `LOCAL_STORAGE_PATH` — local private directory; defaults to `.data/objects`
-- `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_FORCE_PATH_STYLE` — S3-compatible bucket settings
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — server-only object-store credentials recognized by the AWS SDK
+```text
+STORAGE_DRIVER
+LOCAL_STORAGE_PATH
+S3_BUCKET
+S3_REGION
+S3_ENDPOINT
+S3_FORCE_PATH_STYLE
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+```
 
-### Pilot controls
+Use:
 
-- `MAX_UPLOAD_BYTES`, `MAX_ROWS_PER_FILE`, `MAX_COLUMNS_PER_FILE`, `MAX_WORKSHEETS`
-- `MAX_CSV_ROW_LENGTH`, `MAX_REPORT_BYTES`, `MAX_CONCURRENT_RUNS`, `PROCESSING_TIMEOUT_MS`
-- `FILE_RETENTION_MINUTES`, `RESULT_RETENTION_HOURS`, `REPORT_RETENTION_HOURS`
+```text
+STORAGE_DRIVER=local
+```
 
-Omitted pilot-control values use conservative defaults defined in `app/api/server.ts`.
+for local development.
+
+Use:
+
+```text
+STORAGE_DRIVER=s3
+```
+
+for hosted deployments such as Vercel.
+
+### Pilot limits
+
+The application supports configurable limits for:
+
+* File size
+* Row count
+* Column count
+* Worksheet count
+* Report size
+* Processing timeout
+* File retention
+* Result retention
+* Report retention
+
+Default values are defined in:
+
+```text
+app/api/server.ts
+```
 
 ## Clerk setup
 
-1. Create a Clerk application and enable email/password, email verification, and password reset.
-2. Optionally enable Google in Clerk's social connections.
-3. Add `http://localhost:3000` and each deployment origin to Clerk's allowed origins/redirect URLs.
-4. Set the publishable and secret keys in `.env.local` and in the hosting provider's environment settings.
-5. Set `APP_URL` to the exact origin for each environment.
+1. Create a Clerk application.
+2. Enable email and password sign-in.
+3. Enable email verification.
+4. Enable password reset.
+5. Optionally enable Google sign-in.
+6. Add your local and production URLs to Clerk's allowed origins and redirect URLs.
 
-Passwords, password hashes, session tokens, OAuth tokens, and provider secrets are never persisted in ReconcileFlow's PostgreSQL tables. Local users are uniquely keyed by Clerk's stable provider user ID. Pre-Clerk records remain quarantined as `legacy_chatgpt` and are not assigned automatically.
+For local development, add:
 
-## Neon PostgreSQL setup
-
-1. Create a Neon project/database and copy its pooled connection string to `DATABASE_URL`.
-2. Run `npm run db:migrate` as an explicit release step before starting the new application version.
-3. Migrations are append-only, versioned in `db/migrations.ts`, tracked in `rf_schema_migrations`, and protected by `rf_migration_lock`.
-
-Normal requests only check schema compatibility; they do not modify the schema. Back up production data before migrations.
-
-## Temporary storage and cleanup
-
-Development uses a private local directory. Vercel and other serverless deployments must use `STORAGE_DRIVER=s3`; serverless filesystems are ephemeral and are not a durable report store.
-
-Uploads are tracked in `rf_storage_objects` and deleted after processing. Result details and generated reports have configurable expiration times. Deletion failures are retried with bounded exponential backoff, recorded, and left for administrative review. Invoke the protected endpoint periodically:
-
-```bash
-curl -X POST "$APP_URL/api/internal/cleanup" -H "Authorization: Bearer $CLEANUP_TOKEN"
+```text
+http://localhost:3000
 ```
 
-On Vercel, configure a Cron Job for this endpoint through a small trusted scheduler/proxy capable of setting the bearer header, or call it from an external scheduler. Retention means deletion within the cleanup window, not at an exact second.
+Set these values in `.env.local`:
+
+```text
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+APP_URL=http://localhost:3000
+```
+
+ReconcileFlow does not store passwords, password hashes, session tokens, or Clerk secrets in PostgreSQL.
+
+## Neon database setup
+
+1. Create a Neon project.
+2. Copy the pooled PostgreSQL connection string.
+3. Add it to `.env.local` as:
+
+```text
+DATABASE_URL
+```
+
+4. Run:
+
+```bash
+npm run db:migrate
+```
+
+Database migrations are versioned and applied separately from normal application requests.
+
+Back up production data before applying migrations.
+
+## File storage and cleanup
+
+ReconcileFlow temporarily stores:
+
+* Uploaded source files
+* Uploaded target files
+* Reconciliation details
+* Generated reports
+
+Uploaded source files are deleted after processing.
+
+Detailed results and reports are deleted after their configured retention period.
+
+Failed deletions are retried and recorded for review.
+
+Cleanup can be started using:
+
+```bash
+curl -X POST "$APP_URL/api/internal/cleanup" \
+  -H "Authorization: Bearer $CLEANUP_TOKEN"
+```
+
+For hosted deployments, configure a scheduled job to call this endpoint.
+
+Deletion happens during the cleanup window and may not occur at the exact expiration time.
 
 ## Deployment
 
 ### Vercel
 
-1. Push this directory to a private GitHub repository and import it into Vercel as a Next.js project.
-2. Configure every required environment variable. Use `STORAGE_DRIVER=s3`; do not use local storage.
-3. Set the Build Command to `npm run build` and Install Command to `npm ci`.
-4. Run `npm run db:migrate` from a controlled release job before promoting the deployment. Alternatively call `/api/admin/migrate` with `Authorization: Bearer $MIGRATION_TOKEN` as a separate protected release gate.
-5. Deploy, verify `/api/health`, test Clerk sign-in, then schedule cleanup.
+1. Push the project to a private GitHub repository.
+2. Import the repository into Vercel.
+3. Add all required environment variables.
+4. Set:
 
-### Other Node hosts
+```text
+STORAGE_DRIVER=s3
+```
 
-Run `npm ci`, `npm run db:migrate`, `npm run build`, then `npm start`. A persistent private disk may use local storage; horizontally scaled or ephemeral hosts should use S3-compatible storage.
+5. Set the install command:
 
-## Security and pilot limitations
+```bash
+npm ci
+```
 
-- Intended only for synthetic or approved non-sensitive data.
-- No malware scanning, DLP, penetration test, SOC 2, regulatory certification, enterprise SSO, legal hold, or formal compliance claim.
-- Reports may contain complete missing/extra records and temporarily exist in private object storage.
-- Detailed result pages return requested pages to browser memory; responses are `no-store`, but endpoint/browser/infrastructure behavior has not undergone independent security assessment.
-- Cleanup requires an external periodic scheduler and provides window-based, not exact-second, deletion.
-- Local filesystem storage is single-instance only and unsuitable for Vercel production.
-- S3 permissions, encryption, lifecycle rules, backup, retention, and region controls remain the deployer's responsibility.
-- Rate limiting is database-backed pilot protection, not a global edge WAF.
-- Uploaded workbooks are not antivirus-scanned. Macros/formulas are not executed; unsupported encrypted/corrupt workbooks are rejected by application validation.
-- Live two-account Clerk isolation, email delivery, password reset delivery, and natural session expiration should be re-tested in the owner's Clerk instance before inviting pilot users.
-- Logs and infrastructure metadata outside this repository depend on the selected providers.
+6. Set the build command:
 
-## Portability notes
+```bash
+npm run build
+```
 
-Removed Sites-specific dependencies:
+7. Run database migrations before deploying the new version:
 
-| Previous dependency | Portable replacement | Files |
-|---|---|---|
-| `cloudflare:workers` environment import | `process.env` | `app/layout.tsx`, `app/account/page.tsx`, `app/api/server.ts`, `db/index.ts` |
-| Cloudflare R2 binding `UPLOADS` | local/S3-compatible object-store adapter | `app/api/object-store.ts`, `app/api/server.ts` |
-| Vinext/Vite/Worker hosting entry | native Next.js scripts and build | `package.json`, `next.config.ts` |
-| Sites hosting manifest and Vite plugin | removed from standalone archive | `.openai/hosting.json`, `vite.config.ts`, `worker/index.ts`, `build/sites-vite-plugin.ts` |
-| Fixed Sites origin in Clerk validation | environment-controlled `APP_URL` | `app/api/server.ts`, `app/account/page.tsx` |
+```bash
+npm run db:migrate
+```
 
-No current feature requires ChatGPT Sites at runtime. Operational items that cannot be automated in source are provider configuration: Clerk allowed origins, Neon credentials, private S3 bucket credentials/policy, migration release gating, and cleanup scheduling.
+8. Deploy the application.
+9. Test Clerk sign-in.
+10. Verify the health endpoint.
+11. Configure scheduled cleanup.
 
-## Sample data
+Do not use local file storage on Vercel because its filesystem is temporary.
 
-Synthetic CSV and XLSX files are in `examples/data`. They intentionally include a salary mismatch for demonstrating results and contain no real personal data.
+### Other Node.js hosts
+
+Run:
+
+```bash
+npm ci
+npm run db:migrate
+npm run build
+npm start
+```
+
+A host with persistent private disk storage may use local storage.
+
+For multiple application instances or temporary filesystems, use S3-compatible storage.
+
+## Current limitations
+
+This version is for limited pilot use only.
+
+It does not currently include:
+
+* Malware scanning
+* Data loss prevention
+* Enterprise SSO
+* SOC 2 certification
+* Regulatory certification
+* Legal hold
+* Independent penetration testing
+* Formal compliance approval
+
+Reports may temporarily contain complete missing or extra records.
+
+Uploaded files are not antivirus-scanned.
+
+Spreadsheet macros and formulas are not executed.
+
+Corrupted, encrypted, or unsupported workbooks are rejected when detected.
+
+Security, encryption, backup, retention, and regional settings for Neon, Clerk, and object storage must be configured by the project owner.
+
+Use only synthetic or approved non-sensitive files until the application has completed a formal security review.
+
+## Sample files
+
+Synthetic CSV and Excel files are available in:
+
+```text
+examples/data
+```
+
+They contain intentional differences for testing and do not contain real personal data.

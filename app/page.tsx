@@ -1498,8 +1498,8 @@ function Results(p: any) {
           rows={(details as Result["duplicateKeys"]).map((x) => ({
             Key: x.key,
             File: x.file,
-            Occurrences: x.rows.length,
-            "Affected rows": x.rows.join(", "),
+            Occurrences: x.rows?.length,
+            "Affected rows": x.rows?.join(", "),
           }))}
           empty="No duplicate matching keys were found."
         />
