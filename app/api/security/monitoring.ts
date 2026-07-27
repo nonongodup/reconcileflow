@@ -20,9 +20,17 @@ export async function emitSecurityEvent(event: SecurityEvent) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(process.env.SECURITY_ALERT_WEBHOOK_TOKEN ? { authorization: `Bearer ${process.env.SECURITY_ALERT_WEBHOOK_TOKEN}` } : {}),
+        ...(process.env.SECURITY_ALERT_WEBHOOK_TOKEN
+          ? {
+              authorization: `Bearer ${process.env.SECURITY_ALERT_WEBHOOK_TOKEN}`,
+            }
+          : {}),
       },
-      body: JSON.stringify({ ...event, timestamp: new Date().toISOString(), service: "reconcileflow" }),
+      body: JSON.stringify({
+        ...event,
+        timestamp: new Date().toISOString(),
+        service: "reconcileflow",
+      }),
       cache: "no-store",
       signal: AbortSignal.timeout(3_000),
     });

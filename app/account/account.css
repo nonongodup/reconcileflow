@@ -1,1 +1,142 @@
-.account-page{min-height:100vh;background:#f5f7fa}.account-header{min-height:74px;padding:0 clamp(18px,2vw,28px);background:#fff;border-bottom:1px solid #e3e9f0;display:flex;align-items:center;justify-content:space-between;gap:20px}.account-brand{display:flex;align-items:center;gap:10px;color:#13223a;font-size:19px;font-weight:800;text-decoration:none}.account-brand span{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;background:#1463ff}.account-back,.billing-actions button,.team-invite button{color:#1463ff;font-size:14px;font-weight:700;text-decoration:none;padding:10px 14px;border:1px solid #b9cff3;border-radius:8px;background:#f2f7ff}.account-layout{width:min(1100px,calc(100% - 32px));margin:0 auto;padding:32px 0 80px;display:grid;gap:22px}.billing-panel{background:#fff;border:1px solid #dce4ed;border-radius:14px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:22px;box-shadow:0 8px 24px rgba(16,35,60,.06)}.billing-label{text-transform:uppercase;letter-spacing:.08em;color:#617087;font-size:11px;font-weight:800;margin:0}.billing-panel h2{margin:6px 0}.billing-panel p{color:#617087}.billing-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.usage-track{height:8px;background:#e9eef5;border-radius:99px;overflow:hidden;max-width:420px}.usage-track span{display:block;height:100%;background:#1463ff}.team-invite{grid-column:1/-1;border-top:1px solid #e3e9f0;padding-top:18px}.team-invite>div{display:flex;gap:10px}.team-invite input{min-width:260px;border:1px solid #cbd6e3;border-radius:8px;padding:10px}.team-invite code{word-break:break-all}.billing-actions button:disabled,.team-invite button:disabled{opacity:.55}.account-layout .cl-rootBox{margin:0 auto}@media(max-width:700px){.account-layout{width:calc(100% - 24px);padding-top:18px}.billing-panel{grid-template-columns:1fr}.billing-actions{align-items:stretch;flex-direction:column}.team-invite>div{flex-direction:column}.team-invite input{min-width:0;width:100%}.account-back{font-size:12px;padding:8px 10px}}
+.account-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+.account-header {
+  min-height: 74px;
+  padding: 0 clamp(18px, 2vw, 28px);
+  background: #fff;
+  border-bottom: 1px solid #e3e9f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.account-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #13223a;
+  font-size: 19px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.account-brand span {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #1463ff;
+}
+.account-back,
+.billing-actions button,
+.team-invite button {
+  color: #1463ff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 10px 14px;
+  border: 1px solid #b9cff3;
+  border-radius: 8px;
+  background: #f2f7ff;
+}
+.account-layout {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 80px;
+  display: grid;
+  gap: 22px;
+}
+.billing-panel {
+  background: #fff;
+  border: 1px solid #dce4ed;
+  border-radius: 14px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
+  box-shadow: 0 8px 24px rgba(16, 35, 60, 0.06);
+}
+.billing-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #617087;
+  font-size: 11px;
+  font-weight: 800;
+  margin: 0;
+}
+.billing-panel h2 {
+  margin: 6px 0;
+}
+.billing-panel p {
+  color: #617087;
+}
+.billing-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.usage-track {
+  height: 8px;
+  background: #e9eef5;
+  border-radius: 99px;
+  overflow: hidden;
+  max-width: 420px;
+}
+.usage-track span {
+  display: block;
+  height: 100%;
+  background: #1463ff;
+}
+.team-invite {
+  grid-column: 1/-1;
+  border-top: 1px solid #e3e9f0;
+  padding-top: 18px;
+}
+.team-invite > div {
+  display: flex;
+  gap: 10px;
+}
+.team-invite input {
+  min-width: 260px;
+  border: 1px solid #cbd6e3;
+  border-radius: 8px;
+  padding: 10px;
+}
+.team-invite code {
+  word-break: break-all;
+}
+.billing-actions button:disabled,
+.team-invite button:disabled {
+  opacity: 0.55;
+}
+.account-layout .cl-rootBox {
+  margin: 0 auto;
+}
+@media (max-width: 700px) {
+  .account-layout {
+    width: calc(100% - 24px);
+    padding-top: 18px;
+  }
+  .billing-panel {
+    grid-template-columns: 1fr;
+  }
+  .billing-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .team-invite > div {
+    flex-direction: column;
+  }
+  .team-invite input {
+    min-width: 0;
+    width: 100%;
+  }
+  .account-back {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
