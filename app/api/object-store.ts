@@ -14,8 +14,8 @@ function localStore(): BucketLike {
   return {
     async put(key, value) {
       const file = safeLocalPath(key);
-      await mkdir(path.dirname(file), { recursive: true });
-      await writeFile(file, typeof value === "string" ? value : Buffer.from(value));
+      await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
+      await writeFile(file, typeof value === "string" ? value : Buffer.from(value), { mode: 0o600 });
     },
     async get(key) {
       try { const bytes = await readFile(safeLocalPath(key)); return { async arrayBuffer() { return Uint8Array.from(bytes).buffer; } }; }
@@ -30,7 +30,20 @@ function s3Store(): BucketLike {
   if (!bucket) throw new Error("S3_BUCKET is not configured.");
   const client = new S3Client({ region: process.env.S3_REGION || "auto", endpoint: process.env.S3_ENDPOINT || undefined, forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true" });
   return {
-    async put(key, value) { await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: typeof value === "string" ? value : Buffer.from(value) })); },
+    async put(key, value, options) {
+      const configuredEncryption = process.env.S3_SERVER_SIDE_ENCRYPTION;
+      const encryption = configuredEncryption === "aws:kms" ? "aws:kms" : configuredEncryption === "AES256" ? "AES256" : undefined;
+      const metadata = options as { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> } | undefined;
+      await client.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: typeof value === "string" ? value : Buffer.from(value),
+        ContentType: metadata?.httpMetadata?.contentType,
+        Metadata: metadata?.customMetadata,
+        ServerSideEncryption: encryption,
+        SSEKMSKeyId: encryption === "aws:kms" ? process.env.S3_KMS_KEY_ID : undefined,
+      }));
+    },
     async get(key) { const output = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key })); if (!output.Body) return null; const bytes = await output.Body.transformToByteArray(); return { async arrayBuffer() { return Uint8Array.from(bytes).buffer; } }; },
     async delete(key) { await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })); },
   };

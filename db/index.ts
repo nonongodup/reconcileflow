@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { migrations } from "./migrations";
+import { migrations } from "./migrations.ts";
 
 type RuntimeEnv = { DATABASE_URL?: string };
 
@@ -9,7 +9,7 @@ export function getSql() {
   return neon(databaseUrl);
 }
 
-export async function assertSchemaCompatible(requiredVersion = 4) {
+export async function assertSchemaCompatible(requiredVersion = 5) {
   const sql = getSql();
   try {
     const rows = await sql`SELECT max(version) AS version FROM rf_schema_migrations`;

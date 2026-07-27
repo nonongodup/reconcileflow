@@ -1,6 +1,7 @@
 import { getSql } from "../../db";
 import { audit } from "./logging";
 import { deleteWithRetry } from "./storage-core";
+import { emitSecurityEvent } from "./security/monitoring";
 
 export type StorageKind = "source" | "target" | "result" | "report";
 export type BucketLike = {
@@ -23,12 +24,21 @@ export async function deleteTrackedObject(bucket: BucketLike, objectId: string, 
   await sql`UPDATE rf_storage_objects SET status='deleting',last_attempt_at=now() WHERE id=${objectId}`;
   const outcome = await deleteWithRetry(bucket, item.object_key, maximumAttempts);
   if (outcome.deleted) {
+      let verified = false;
+      try { verified = (await bucket.get(item.object_key)) === null; } catch { verified = false; }
+      if (!verified) {
+        await sql`UPDATE rf_storage_objects SET status='cleanup_failed',retry_count=retry_count+${outcome.attempts},last_error_code='DELETE_VERIFICATION_FAILED',last_attempt_at=now() WHERE id=${objectId}`;
+        await audit("cleanup_failed", requestId, item.user_id, item.run_id, "storage_verify", "DELETE_VERIFICATION_FAILED");
+        await emitSecurityEvent({ event: "storage_deletion_unverified", requestId, userId: item.user_id, runId: item.run_id, stage: "storage_verify", safeCode: "DELETE_VERIFICATION_FAILED", severity: "high" });
+        return false;
+      }
       await sql`UPDATE rf_storage_objects SET status='deleted',deleted_at=now(),last_error_code=null,retry_count=${Number(item.retry_count) + outcome.attempts - 1} WHERE id=${objectId}`;
       await audit("cleanup_succeeded", requestId, item.user_id, item.run_id, "storage_delete");
       return true;
   }
   await sql`UPDATE rf_storage_objects SET status='cleanup_failed',retry_count=retry_count+${outcome.attempts},last_error_code=${outcome.errorCode},last_attempt_at=now() WHERE id=${objectId}`;
   await audit("cleanup_failed", requestId, item.user_id, item.run_id, "storage_delete", "STORAGE_DELETE_FAILED");
+  await emitSecurityEvent({ event: "storage_deletion_failed", requestId, userId: item.user_id, runId: item.run_id, stage: "storage_delete", safeCode: "STORAGE_DELETE_FAILED", severity: "high" });
   return false;
 }
 

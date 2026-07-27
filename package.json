@@ -10,22 +10,25 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/file-support.test.ts tests/reconciliation-engine.test.ts tests/backend-pilot.test.ts tests/database-migrations.test.ts tests/security-hardening.test.ts",
+    "test": "node --experimental-strip-types --test tests/file-support.test.ts tests/reconciliation-engine.test.ts tests/backend-pilot.test.ts tests/database-migrations.test.ts tests/security-hardening.test.ts tests/security-controls.test.ts tests/billing-plans.test.ts",
     "lint": "eslint . --ignore-pattern .next",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "security:check": "tsx scripts/security-check.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.883.0",
     "@clerk/backend": "^3.11.5",
     "@clerk/nextjs": "^7.5.18",
-    "@aws-sdk/client-s3": "^3.883.0",
     "@neondatabase/serverless": "^1.0.1",
+    "dotenv": "^16.6.1",
     "drizzle-orm": "0.45.2",
     "lucide-react": "^0.468.0",
-    "next": "16.2.6",
+    "next": "16.2.12",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "xlsx": "^0.18.5"
+    "stripe": "^18.5.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.2.1",
@@ -36,8 +39,13 @@
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "4.2.1",
-    "typescript": "5.9.3",
-    "tsx": "^4.20.5"
+    "tsx": "^4.20.5",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "esbuild": "0.25.12",
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   },
   "type": "module",
   "displayName": "ReconcileFlow"

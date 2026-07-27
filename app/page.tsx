@@ -12,6 +12,7 @@ import {
 } from "./file-parsers";
 import { Difference, Mapping, Result } from "./reconciliation";
 import { Calculator, DatabaseZap, FileCheck2, RefreshCw, ShieldCheck, UsersRound } from "lucide-react";
+import "./pricing.css";
 type View = "home" | "workspace" | "templates" | "history" | "help";
 type RunSummary = { sourceRows: number; targetRows: number; matched: number; missing: number; extra: number; differenceRecords: number; fieldDifferences: number; duplicateKeys: number; invalidKeys: number; compared: number; topFields: [string, number][] };
 const RESULT_DETAIL_TYPES: Record<string, string> = { "Field Differences": "differences", "Missing in Target": "missing", "Extra in Target": "extra", "Duplicate Keys": "duplicateKeys", "Invalid Keys": "invalidKeys" };
@@ -547,6 +548,14 @@ function Landing({
 }) {
   const startFree = () => isSignedIn ? navigate("workspace") : window.location.assign(`/sign-up?redirect_url=${encodeURIComponent("/#/workspace")}`);
   const [selectedPlan, setSelectedPlan] = useState("Professional");
+  const [billingInterval, setBillingInterval] = useState<"month"|"year">("month");
+  const choosePlan = async (plan: string) => {
+    if (plan === "Free") return startFree();
+    if (!isSignedIn) return window.location.assign(`/sign-up?redirect_url=${encodeURIComponent("/#/home")}`);
+    const response = await fetch("/api/billing/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ plan: plan.toLowerCase(), interval: billingInterval }) });
+    const data = await response.json();
+    if (response.ok && data.url) window.location.assign(data.url); else window.alert(data.error || "Billing could not be started.");
+  };
   return (
     <main>
       <section className="hero">
@@ -675,12 +684,13 @@ function Landing({
             <i /> Simple pricing
           </div>
           <h2>Start free. Scale when the files do.</h2>
+          <div className="billing-toggle"><button className={billingInterval === "month" ? "active" : ""} onClick={()=>setBillingInterval("month")}>Monthly</button><button className={billingInterval === "year" ? "active" : ""} onClick={()=>setBillingInterval("year")}>Annual <span>Save 15%</span></button></div>
         </div>
         <div className="pricing-grid">
           {[
             {
               n: "Free",
-              p: "$0",
+              monthly: "$0", annual: "$0",
               f: [
                 "3 reconciliations / month",
                 "2,000 records per file",
@@ -690,7 +700,7 @@ function Landing({
             },
             {
               n: "Professional",
-              p: "$29",
+              monthly: "$29", annual: "$24.65",
               tag: "Most popular",
               f: [
                 "30 reconciliations / month",
@@ -702,8 +712,11 @@ function Landing({
             },
             {
               n: "Team",
-              p: "$99",
+              monthly: "$99", annual: "$84.15",
               f: [
+                "100 reconciliations / month",
+                "250,000 records per file",
+                "Up to 10 users",
                 "Unlimited team templates",
                 "Shared history",
                 "Team workspace",
@@ -718,8 +731,9 @@ function Landing({
               {x.tag && <b className="plan-tag">{x.tag}</b>}
               <h3>{x.n}</h3>
               <p>
-                <strong>{x.p}</strong> / month
+                <strong>{billingInterval === "month" ? x.monthly : x.annual}</strong> / month
               </p>
+              {billingInterval === "year" && x.n !== "Free" && <small>Billed annually at {x.n === "Professional" ? "$295.80" : "$1,009.80"}</small>}
               <ul>
                 {x.f.map((f) => (
                   <li key={f}>
@@ -731,17 +745,17 @@ function Landing({
                 className={selected ? "primary" : "secondary"}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (selected) startFree();
+                  if (selected) void choosePlan(x.n);
                   else setSelectedPlan(x.n);
                 }}
               >
-                {selected ? "Start free" : `Select ${x.n}`}
+                {selected ? (x.n === "Free" ? "Start free" : `Choose ${x.n}`) : `Select ${x.n}`}
               </button>
             </article>
           )})}
         </div>
         <p className="fine">
-          Illustrative pricing only. No payment is processed in this prototype.
+          Secure recurring billing is processed by Stripe. Cancel or change plans from your account.
         </p>
       </section>
       <section className="final-cta">
@@ -1272,11 +1286,9 @@ function Privacy() {
     <div className="privacy-note">
       <span>⌾</span>
       <div>
-        <b>Temporary file handling</b>
+        <b>Secure production file handling</b>
         <p>
-          Files are processed deterministically on the server, are not sent to an AI model,
-          and source uploads are deleted after processing. Do not use highly sensitive
-          production data in an unapproved pilot.
+        Files are processed securely using deterministic reconciliation rules and are never sent to an AI model. Uploads are malware-scanned before processing, source files are securely deleted after each run, and temporary results and reports are automatically removed according to retention settings.
         </p>
       </div>
     </div>
@@ -1498,8 +1510,8 @@ function Results(p: any) {
           rows={(details as Result["duplicateKeys"]).map((x) => ({
             Key: x.key,
             File: x.file,
-            Occurrences: x.rows?.length,
-            "Affected rows": x.rows?.join(", "),
+            Occurrences: x.rows.length,
+            "Affected rows": x.rows.join(", "),
           }))}
           empty="No duplicate matching keys were found."
         />
